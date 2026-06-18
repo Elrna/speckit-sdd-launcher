@@ -1,0 +1,242 @@
+:root {
+  font-family: "Segoe UI", Inter, Avenir, Helvetica, Arial, sans-serif;
+  font-size: 15px;
+  line-height: 1.6;
+  color: #1a1a1a;
+  background-color: #f4f5f7;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+}
+
+.container {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 24px 20px 48px;
+}
+
+header h1 {
+  margin: 0 0 4px;
+  font-size: 1.7rem;
+}
+
+.subtitle {
+  margin: 0 0 20px;
+  color: #555;
+}
+
+.card {
+  background: #fff;
+  border: 1px solid #e3e5e8;
+  border-radius: 12px;
+  padding: 18px 20px;
+  margin-bottom: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.card h2 {
+  margin: 0 0 12px;
+  font-size: 1.05rem;
+}
+
+.row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+input[type="text"],
+input {
+  flex: 1;
+  min-width: 0;
+  border-radius: 8px;
+  border: 1px solid #cfd3d8;
+  padding: 0.55em 0.8em;
+  font-size: 0.95em;
+  font-family: inherit;
+  background: #fafbfc;
+  color: #1a1a1a;
+}
+
+button {
+  cursor: pointer;
+  border-radius: 8px;
+  border: 1px solid #cfd3d8;
+  padding: 0.55em 1.1em;
+  font-size: 0.95em;
+  font-weight: 600;
+  font-family: inherit;
+  background: #fff;
+  color: #1a1a1a;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+
+button:hover:not(:disabled) {
+  border-color: #396cd8;
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+button.primary {
+  background: #396cd8;
+  border-color: #396cd8;
+  color: #fff;
+  width: 100%;
+  padding: 0.7em;
+  font-size: 1rem;
+}
+
+button.primary:hover:not(:disabled) {
+  background: #2d59b8;
+}
+
+button.ghost {
+  background: transparent;
+}
+
+.hidden {
+  display: none !important;
+}
+
+/* 前提条件リスト */
+.prereq {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 12px;
+}
+
+.prereq li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 0;
+}
+
+.prereq .ver {
+  margin-left: auto;
+  color: #666;
+  font-size: 0.85em;
+  font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
+}
+
+.dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.dot.ok {
+  background: #2ec27e;
+}
+.dot.ng {
+  background: #e5484d;
+}
+.dot.pending {
+  background: #d0d3d8;
+}
+
+.note {
+  font-size: 0.85em;
+  color: #666;
+  margin: 8px 0 0;
+}
+
+.note.warn {
+  color: #b54708;
+}
+
+.status {
+  margin: 12px 0 0;
+  font-weight: 600;
+}
+
+.status.err {
+  color: #e5484d;
+}
+
+/* ログ */
+.log {
+  margin: 12px 0 0;
+  max-height: 300px;
+  overflow: auto;
+  background: #0d1117;
+  color: #c9d1d9;
+  border-radius: 8px;
+  padding: 12px;
+  font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.log .ln.stderr {
+  color: #ff9492;
+}
+.log .ln.info {
+  color: #79c0ff;
+}
+.log .ln.stdout {
+  color: #c9d1d9;
+}
+
+#done-card ol {
+  margin: 0;
+  padding-left: 20px;
+}
+
+#done-card li {
+  margin-bottom: 6px;
+}
+
+code {
+  background: #eef0f3;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
+  font-size: 0.88em;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    color: #e6e6e6;
+    background-color: #1b1d21;
+  }
+  .subtitle,
+  .note,
+  .prereq .ver {
+    color: #9aa0a6;
+  }
+  .card {
+    background: #25282e;
+    border-color: #3a3e45;
+  }
+  input {
+    background: #1b1d21;
+    border-color: #3a3e45;
+    color: #e6e6e6;
+  }
+  button {
+    background: #2f333a;
+    border-color: #3a3e45;
+    color: #e6e6e6;
+  }
+  code {
+    background: #2f333a;
+  }
+}

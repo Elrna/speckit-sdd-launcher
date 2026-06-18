@@ -1,0 +1,21 @@
+# Node
+node_modules/
+dist/
+dist-ssr/
+*.local
+*.log
+npm-debug.log*
+
+# Rust / Tauri
+target/
+sdd-launcher/src-tauri/target/
+sdd-launcher/src-tauri/gen/schemas/
+
+# OS / Editor
+.DS_Store
+Thumbs.db
+.idea/
+*.suo
+
+# Test scratch
+_speckit_test/

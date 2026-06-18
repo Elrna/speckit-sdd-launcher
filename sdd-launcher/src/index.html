@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="stylesheet" href="styles.css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SDD Launcher — Spec-Kit セットアップ</title>
+    <script type="module" src="/main.js" defer></script>
+  </head>
+
+  <body>
+    <main class="container">
+      <header>
+        <h1>SDD Launcher</h1>
+        <p class="subtitle">
+          フォルダを選んで Spec-Kit を初期化し、Claude Code で
+          <code>/SDD</code> を一括実行できる環境を作ります。
+        </p>
+      </header>
+
+      <!-- 前提条件 -->
+      <section class="card">
+        <h2>1. 前提条件</h2>
+        <ul id="prereq-list" class="prereq">
+          <li data-key="git"><span class="dot pending"></span><b>git</b><span class="ver">確認中…</span></li>
+          <li data-key="uv"><span class="dot pending"></span><b>uv</b><span class="ver">確認中…</span></li>
+          <li data-key="claude"><span class="dot pending"></span><b>Claude Code (claude)</b><span class="ver">確認中…</span></li>
+        </ul>
+        <div class="row">
+          <button id="recheck-btn" class="ghost">再チェック</button>
+          <button id="install-uv-btn" class="hidden">uv をインストール</button>
+        </div>
+        <p id="prereq-note" class="note"></p>
+      </section>
+
+      <!-- フォルダ選択 -->
+      <section class="card">
+        <h2>2. プロジェクトフォルダ</h2>
+        <div class="row">
+          <input id="dir-input" placeholder="フォルダ未選択" readonly />
+          <button id="pick-btn">フォルダを選択</button>
+        </div>
+        <p class="note">
+          選んだフォルダ直下に Spec-Kit を初期化します（空でなくても <code>--force</code> で上書きマージ）。
+        </p>
+      </section>
+
+      <!-- 実行 -->
+      <section class="card">
+        <h2>3. セットアップ実行</h2>
+        <button id="setup-btn" class="primary" disabled>Spec-Kit を初期化 &amp; /SDD を作成</button>
+        <p id="status" class="status"></p>
+        <pre id="log" class="log hidden"></pre>
+      </section>
+
+      <!-- 完了後の案内 -->
+      <section id="done-card" class="card hidden">
+        <h2>✅ 次のステップ</h2>
+        <ol>
+          <li>選択したフォルダを Claude Code で開く。</li>
+          <li>Claude Code で <code>/SDD</code> を実行する。</li>
+          <li>各フェーズ完了ごとに確認を取りながら、constitution → specify → clarify → plan → tasks → implement が自動で進みます。</li>
+        </ol>
+      </section>
+    </main>
+  </body>
+</html>
