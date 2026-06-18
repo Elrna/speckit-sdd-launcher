@@ -18,9 +18,11 @@ Claude Code 上で **`/SDD` コマンド一発** で Spec-Driven Development の
 ## `/SDD` コマンドの挙動
 
 `/SDD` は Spec-Kit の各 `speckit-*` スキル（`.claude/skills/speckit-*/SKILL.md`）を
-`Skill` ツールで順に実行し、
-**各フェーズ完了ごとに `AskUserQuestion`** で「次へ進む / 修正 / 中断」を確認しながらループします。
-コマンドを 1 つずつ手で打つ必要はありません。本体は [templates/SDD.md](templates/SDD.md)。
+`Skill` ツールで順に実行します。
+**仕様作成（constitution → specify → clarify → plan → tasks）は承認を挟まず連続実行**し、
+**実装に入る前に一度だけ**、作成物（仕様・計画・タスク）を日本語でまとめて説明して
+`AskUserQuestion` で承認を取り、承認後に `speckit-implement` を実行します。
+コマンドを 1 つずつ手で打ったり、フェーズごとに承認したりする必要はありません。本体は [templates/SDD.md](templates/SDD.md)。
 
 ## 前提条件
 

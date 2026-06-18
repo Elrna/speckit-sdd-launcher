@@ -9,8 +9,8 @@ Spec-Kit を使った **Spec-Driven Development (SDD)** のループ環境を、
 2. プロジェクトフォルダを選択
 3. ボタン一つで Spec-Kit を初期化し、Claude Code 用の **`/SDD` コマンド** を配置
 4. 以後そのフォルダを Claude Code で開き **`/SDD`** を実行すると、
-   `constitution → specify → clarify → plan → tasks → implement` を
-   **各フェーズ完了ごとに `AskUserQuestion` で確認しながら自動ループ実行**
+   仕様作成（`constitution → specify → clarify → plan → tasks`）を**承認なしで連続実行**し、
+   **実装前に一度だけ内容を説明して承認を取り**、承認後に `implement` を実行
 
 コマンドを 1 つずつ手で打つ必要はありません。
 
