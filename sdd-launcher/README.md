@@ -13,7 +13,16 @@ Claude Code 上で **`/SDD` コマンド一発** で Spec-Driven Development の
 4. 「初期化」ボタンで以下を自動実行
    - `uvx --from git+https://github.com/github/spec-kit.git specify init . --here --integration claude --script ps --force --ignore-agent-tools`
    - `.claude/commands/SDD.md`（`/SDD` オーケストレーターコマンド）を配置
+   - `.specify/memory/coding-policy.md`（生成コードの設計ポリシー）を配置し、`CLAUDE.md` から `@import` で参照
 5. 以後、そのフォルダを Claude Code で開き `/SDD` を実行するだけ
+
+## コーディングポリシー
+
+セットアップ時に [templates/coding-policy.md](templates/coding-policy.md) を
+`.specify/memory/coding-policy.md` として配置し、プロジェクトの `CLAUDE.md` から参照させます。
+これにより **このプロジェクトで Claude Code が生成・編集するすべてのコード** に、
+SRP / KISS / DRY・命名設計・カプセル化・リファクタリング鉄則・「悪い設計の臭い」チェックリスト等の
+設計ポリシーが常時適用されます（`/SDD` の implement 段でも明示的に参照）。
 
 ## `/SDD` コマンドの挙動
 
@@ -55,7 +64,8 @@ sdd-launcher/
 │   └── styles.css
 ├── src-tauri/
 │   ├── src/lib.rs        Tauri コマンド（前提チェック / フォルダ選択 / uv 導入 / specify 実行）
-│   ├── templates/SDD.md  生成先に配置する /SDD コマンド本文（ビルド時に埋め込み）
+│   ├── templates/SDD.md           生成先に配置する /SDD コマンド本文（ビルド時に埋め込み）
+│   ├── templates/coding-policy.md 生成コードの設計ポリシー（ビルド時に埋め込み）
 │   ├── capabilities/     権限定義
 │   ├── Cargo.toml
 │   └── tauri.conf.json

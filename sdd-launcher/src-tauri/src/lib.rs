@@ -17,6 +17,12 @@ use tauri::{Emitter, Window};
 /// /SDD スラッシュコマンドの本文（ビルド時に埋め込む）。
 const SDD_COMMAND: &str = include_str!("../templates/SDD.md");
 
+/// 生成コードに適用するコーディングポリシー（ビルド時に埋め込む）。
+const CODING_POLICY: &str = include_str!("../templates/coding-policy.md");
+
+/// CLAUDE.md に追記するポリシー参照ブロックの目印（再実行時の重複追記を防ぐ）。
+const POLICY_MARKER: &str = "<!-- SDD-CODING-POLICY -->";
+
 /// uv の公式インストーラが配置する実行ファイルのディレクトリ (%USERPROFILE%\.local\bin)。
 fn uv_bin_dir() -> Option<std::path::PathBuf> {
     std::env::var_os("USERPROFILE")
@@ -188,6 +194,49 @@ async fn install_uv(window: Window) -> Result<String, String> {
     }
 }
 
+/// コーディングポリシーを `.specify/memory/coding-policy.md` に配置し、
+/// プロジェクト直下の `CLAUDE.md` から `@import` で参照させる（再実行しても重複しない）。
+fn write_coding_policy(window: &Window, path: &Path) -> Result<(), String> {
+    // 1. 正本ファイルを配置
+    let memory_dir = path.join(".specify").join("memory");
+    std::fs::create_dir_all(&memory_dir)
+        .map_err(|e| format!(".specify/memory の作成に失敗: {e}"))?;
+    let policy_path = memory_dir.join("coding-policy.md");
+    std::fs::write(&policy_path, CODING_POLICY)
+        .map_err(|e| format!("coding-policy.md の書き込みに失敗: {e}"))?;
+    emit_log(
+        window,
+        "info",
+        &format!("コーディングポリシーを配置しました: {}", policy_path.display()),
+    );
+
+    // 2. CLAUDE.md から参照（未追記の場合のみ）
+    let claude_md = path.join("CLAUDE.md");
+    let existing = std::fs::read_to_string(&claude_md).unwrap_or_default();
+    if existing.contains(POLICY_MARKER) {
+        emit_log(window, "info", "CLAUDE.md は既にポリシーを参照済みです。");
+        return Ok(());
+    }
+    let block = format!(
+        "\n{POLICY_MARKER}\n## コーディングポリシー（必須）\n\
+         このプロジェクトで生成・編集するすべてのコードは、次の設計ポリシーに必ず従うこと。\n\
+         @.specify/memory/coding-policy.md\n"
+    );
+    let mut content = existing;
+    if !content.is_empty() && !content.ends_with('\n') {
+        content.push('\n');
+    }
+    content.push_str(&block);
+    std::fs::write(&claude_md, content)
+        .map_err(|e| format!("CLAUDE.md への参照追記に失敗: {e}"))?;
+    emit_log(
+        window,
+        "info",
+        "CLAUDE.md にコーディングポリシーの参照を追記しました。",
+    );
+    Ok(())
+}
+
 /// 選択フォルダで Spec-Kit を初期化し、/SDD コマンドを配置する。
 #[tauri::command]
 async fn run_setup(window: Window, dir: String) -> Result<String, String> {
@@ -240,6 +289,10 @@ async fn run_setup(window: Window, dir: String) -> Result<String, String> {
             "info",
             &format!("/SDD コマンドを作成しました: {}", sdd_path.display()),
         );
+
+        // 3. コーディングポリシーを配置（生成コードに常時適用）
+        write_coding_policy(&w, path)?;
+
         emit_log(
             &w,
             "info",

@@ -76,6 +76,7 @@ allowed-tools: Read, Write, Edit, Glob, Grep, Bash, AskUserQuestion, Skill, Task
 
 ### 7. Implement（承認後）
 - `Skill` ツールで **`speckit-implement`** を実行する。
+- **生成・編集するコードは必ず `.specify/memory/coding-policy.md` のコーディングポリシーに従う**（CLAUDE.md からも参照済み）。実装後は同ファイルの「悪い設計の臭い」チェックリストで自己レビューし、該当があれば直す。
 - 実装は段階的に行い、破壊的・不可逆な操作の前にはユーザーへ確認する。
 - 完了後 → 最終サマリ（実装したファイル、残課題、次の一手）を日本語で提示して終了する。
 
