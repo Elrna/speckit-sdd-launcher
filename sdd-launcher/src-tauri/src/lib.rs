@@ -20,8 +20,18 @@ const SDD_COMMAND: &str = include_str!("../templates/SDD.md");
 /// 生成コードに適用するコーディングポリシー（ビルド時に埋め込む）。
 const CODING_POLICY: &str = include_str!("../templates/coding-policy.md");
 
+/// 機械的執行レイヤー: hooks 定義とスクリプト（ビルド時に埋め込む）。
+const SETTINGS_JSON: &str = include_str!("../templates/settings.json");
+const HOOK_TRACE_LINT: &str = include_str!("../templates/trace-lint.ps1");
+const HOOK_POST_EDIT: &str = include_str!("../templates/post-edit-check.ps1");
+const HOOK_STOP_GATE: &str = include_str!("../templates/stop-gate.ps1");
+
 /// CLAUDE.md に追記するポリシー参照ブロックの目印（再実行時の重複追記を防ぐ）。
 const POLICY_MARKER: &str = "<!-- SDD-CODING-POLICY -->";
+
+/// settings.json に本アプリの hooks が既に登録済みかを判定する目印
+/// （再セットアップで重複登録しないための冪等性キー）。
+const HOOKS_MARKER: &str = "stop-gate.ps1";
 
 /// uv の公式インストーラが配置する実行ファイルのディレクトリ (%USERPROFILE%\.local\bin)。
 fn uv_bin_dir() -> Option<std::path::PathBuf> {
@@ -237,6 +247,114 @@ fn write_coding_policy(window: &Window, path: &Path) -> Result<(), String> {
     Ok(())
 }
 
+/// 既存の settings.json（Value）に、テンプレート側 hooks の各イベント配列を追記する。
+/// 既存イベントがあれば配列末尾に足し、無ければ新設する。既存エントリは壊さない。
+fn merge_hooks(existing: &mut serde_json::Value, template_hooks: &serde_json::Value) {
+    let obj = match existing.as_object_mut() {
+        Some(o) => o,
+        None => return,
+    };
+    // 既存に "hooks" オブジェクトが無ければ用意する。
+    if !obj.get("hooks").map(|h| h.is_object()).unwrap_or(false) {
+        obj.insert("hooks".to_string(), serde_json::json!({}));
+    }
+    let dest_hooks = obj
+        .get_mut("hooks")
+        .and_then(|h| h.as_object_mut())
+        .expect("hooks は直前でオブジェクトを保証済み");
+
+    if let Some(src) = template_hooks.as_object() {
+        for (event, entries) in src {
+            let src_arr = match entries.as_array() {
+                Some(a) => a,
+                None => continue,
+            };
+            match dest_hooks.get_mut(event).and_then(|e| e.as_array_mut()) {
+                Some(dest_arr) => {
+                    for e in src_arr {
+                        dest_arr.push(e.clone());
+                    }
+                }
+                None => {
+                    dest_hooks.insert(event.clone(), serde_json::Value::Array(src_arr.clone()));
+                }
+            }
+        }
+    }
+}
+
+/// 機械的執行レイヤー（trace-lint / post-edit-check / stop-gate と settings.json）を配置する。
+/// settings.json は既存があれば安全にマージし、既に登録済みなら何もしない（冪等）。
+fn write_hooks(window: &Window, path: &Path) -> Result<(), String> {
+    // 1. hooks スクリプトを配置（本アプリ管理ファイルなので毎回上書き）。
+    let hooks_dir = path.join(".claude").join("hooks");
+    std::fs::create_dir_all(&hooks_dir).map_err(|e| format!(".claude/hooks の作成に失敗: {e}"))?;
+    for (name, body) in [
+        ("trace-lint.ps1", HOOK_TRACE_LINT),
+        ("post-edit-check.ps1", HOOK_POST_EDIT),
+        ("stop-gate.ps1", HOOK_STOP_GATE),
+    ] {
+        std::fs::write(hooks_dir.join(name), body)
+            .map_err(|e| format!("{name} の書き込みに失敗: {e}"))?;
+    }
+    emit_log(window, "info", "検証 hooks スクリプトを配置しました: .claude/hooks/");
+
+    // 2. settings.json をマージ配置。
+    let settings_path = path.join(".claude").join("settings.json");
+    let template: serde_json::Value = serde_json::from_str(SETTINGS_JSON)
+        .map_err(|e| format!("埋め込み settings.json のパースに失敗: {e}"))?;
+
+    if !settings_path.exists() {
+        std::fs::write(&settings_path, SETTINGS_JSON)
+            .map_err(|e| format!("settings.json の書き込みに失敗: {e}"))?;
+        emit_log(window, "info", ".claude/settings.json を作成しました。");
+        return Ok(());
+    }
+
+    // 既存あり。
+    let existing_text = std::fs::read_to_string(&settings_path)
+        .map_err(|e| format!("settings.json の読み込みに失敗: {e}"))?;
+    if existing_text.contains(HOOKS_MARKER) {
+        emit_log(window, "info", ".claude/settings.json は既に検証 hooks を登録済みです。");
+        return Ok(());
+    }
+    let mut existing: serde_json::Value = match serde_json::from_str(&existing_text) {
+        Ok(v) => v,
+        Err(e) => {
+            // パース不能なら壊さずスキップ（警告のみ）。
+            emit_log(
+                window,
+                "warn",
+                &format!(
+                    "既存の .claude/settings.json をパースできません（{e}）。hooks の登録をスキップしました。手動でマージしてください。"
+                ),
+            );
+            return Ok(());
+        }
+    };
+    if !existing.is_object() {
+        emit_log(
+            window,
+            "warn",
+            "既存の .claude/settings.json がオブジェクトではありません。hooks の登録をスキップしました。",
+        );
+        return Ok(());
+    }
+
+    let template_hooks = template.get("hooks").cloned().unwrap_or(serde_json::json!({}));
+    merge_hooks(&mut existing, &template_hooks);
+    let merged = serde_json::to_string_pretty(&existing)
+        .map_err(|e| format!("マージ後 settings.json の直列化に失敗: {e}"))?;
+    std::fs::write(&settings_path, merged)
+        .map_err(|e| format!("settings.json の書き込みに失敗: {e}"))?;
+    emit_log(
+        window,
+        "info",
+        "既存の .claude/settings.json に検証 hooks をマージしました。",
+    );
+    Ok(())
+}
+
 /// 選択フォルダで Spec-Kit を初期化し、/SDD コマンドを配置する。
 #[tauri::command]
 async fn run_setup(window: Window, dir: String) -> Result<String, String> {
@@ -293,6 +411,9 @@ async fn run_setup(window: Window, dir: String) -> Result<String, String> {
         // 3. コーディングポリシーを配置（生成コードに常時適用）
         write_coding_policy(&w, path)?;
 
+        // 4. 機械的執行レイヤー（検証 hooks + settings.json）を配置
+        write_hooks(&w, path)?;
+
         emit_log(
             &w,
             "info",
@@ -319,4 +440,54 @@ pub fn run() {
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// 埋め込み settings.json は正しい JSON であり、目印を含む。
+    #[test]
+    fn template_settings_is_valid_and_marked() {
+        let v: serde_json::Value = serde_json::from_str(SETTINGS_JSON).unwrap();
+        assert!(v.get("hooks").and_then(|h| h.get("Stop")).is_some());
+        assert!(SETTINGS_JSON.contains(HOOKS_MARKER));
+    }
+
+    /// 既存 hooks を持つ設定へマージすると、既存を壊さず末尾に追記される。
+    #[test]
+    fn merge_preserves_existing_and_appends() {
+        let mut existing = serde_json::json!({
+            "permissions": { "allow": ["Bash"] },
+            "hooks": {
+                "PostToolUse": [ { "matcher": "Read", "hooks": [] } ]
+            }
+        });
+        let template: serde_json::Value = serde_json::from_str(SETTINGS_JSON).unwrap();
+        let template_hooks = template.get("hooks").cloned().unwrap();
+        merge_hooks(&mut existing, &template_hooks);
+
+        // 既存の非 hooks 設定は保持される。
+        assert_eq!(existing["permissions"]["allow"][0], "Bash");
+        // 既存 PostToolUse エントリ + テンプレートの 1 件で 2 件になる。
+        assert_eq!(existing["hooks"]["PostToolUse"].as_array().unwrap().len(), 2);
+        assert_eq!(existing["hooks"]["PostToolUse"][0]["matcher"], "Read");
+        // Stop は新設される。
+        assert!(existing["hooks"]["Stop"].is_array());
+        // マージ後テキストに目印が入る = 次回実行はスキップされる（冪等）。
+        let text = serde_json::to_string(&existing).unwrap();
+        assert!(text.contains(HOOKS_MARKER));
+    }
+
+    /// hooks キーが無い設定にもマージできる。
+    #[test]
+    fn merge_into_settings_without_hooks() {
+        let mut existing = serde_json::json!({ "model": "opus" });
+        let template: serde_json::Value = serde_json::from_str(SETTINGS_JSON).unwrap();
+        let template_hooks = template.get("hooks").cloned().unwrap();
+        merge_hooks(&mut existing, &template_hooks);
+        assert_eq!(existing["model"], "opus");
+        assert!(existing["hooks"]["Stop"].is_array());
+        assert!(existing["hooks"]["PostToolUse"].is_array());
+    }
 }
