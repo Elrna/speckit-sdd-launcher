@@ -31,6 +31,19 @@ Spec-Kit を使った **Spec-Driven Development (SDD)** のループ環境を、
 コマンドを 1 つずつ手で打つ必要はありません。フローの設計根拠は
 [docs/validation-gated-sdd-report.md](docs/validation-gated-sdd-report.md) を参照してください。
 
+## /EF — Example-First フロー
+
+要求を 1 行ずつ検証可能な文で定め、具体例で挙動を合意してから実装し、全テストを要求 ID に
+紐付けて機械検証する、個人・小規模ツール開発向けの軽量フローです。散文の仕様書は書きません。
+
+- **使い方**: Claude Code で `/EF <作りたいもの>` を実行する
+- **成果物**: `examples.md`（要求リスト＋具体例表＋non-goals の唯一の仕様）／テスト（各テストに
+  `REQ-xx` 注釈）／`README.md`／`req-trace-matrix.md`（要求⇔テスト対応表）
+- **承認**: 具体例セッション 1 画面を見て 1 回だけ承認する
+- **hooks**: `.claude/hooks/ef-trace-lint.ps1` が要求⇔テストの対応（検証漏れ・捏造参照）を検査し、
+  `.claude/hooks/term-lint.ps1` が Markdown の曖昧語を警告。Stop フックが対応検査とテストを強制する
+- **SDD との関係**: 仕様書・設計書・タスク分割を伴う大規模・チーム共有向けには `/SDD` が残っています
+
 ## クイックスタート
 
 ```bash

@@ -19,3 +19,6 @@ Thumbs.db
 
 # Test scratch
 _speckit_test/
+
+# EF / Stop フックのテスト実行状態
+.claude/.last-test-state
